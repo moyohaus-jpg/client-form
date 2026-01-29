@@ -1,0 +1,121 @@
+# client-form
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>鑑定プロンプトジェネレーター</title>
+<style>
+body { font-family: sans-serif; background:#f7f7f7; padding:20px; }
+h2 { margin-top:0; }
+label { display:block; margin-top:12px; font-weight:bold; }
+input, textarea, select {
+  width:100%; padding:8px; margin-top:4px;
+}
+button { margin-top:20px; padding:12px; width:100%; font-size:16px; }
+.hidden { display:none; }
+#output { height:420px; }
+.box {
+  background:#fff; padding:20px; border-radius:6px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= クライアント用 ================= -->
+<div id="client" class="box">
+<h2>ご相談内容の入力</h2>
+
+<label>生年月日</label>
+<input id="birthdate">
+
+<label>出生時刻</label>
+<input id="birthtime">
+
+<label>出生地（都道府県＋市町村）</label>
+<input id="birthplace" placeholder="岐阜県大垣市">
+
+<label>ご相談内容</label>
+<textarea id="consultation"></textarea>
+
+<label>香りの好み</label>
+<input id="aroma">
+
+<label>体質・体調について</label>
+<input id="constitution">
+
+<label>ご相談テーマ</label>
+<select id="purpose">
+  <option>人生全体</option>
+  <option>仕事・才能</option>
+  <option>親子・家族</option>
+  <option>心身ケア</option>
+</select>
+
+<button onclick="generate()">送信する</button>
+</div>
+
+<!-- ================= 鑑定士用 ================= -->
+<div id="reader" class="box hidden">
+<h2>鑑定士用プロンプト（ChatGPT貼付用）</h2>
+
+<textarea id="output"></textarea>
+
+<button onclick="back()">← 入力画面に戻る</button>
+</div>
+
+<script>
+async function generate() {
+  const place = document.getElementById("birthplace").value;
+  const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(place)}`;
+  const res = await fetch(geoUrl);
+  const geo = await res.json();
+
+  let lat="不明", lon="不明";
+  if (geo.length>0) { lat=geo[0].lat; lon=geo[0].lon; }
+
+  const prompt = `
+以下の情報をもとに、西洋占星術・心理的視点・植物療法を統合した鑑定を行ってください。
+
+【出生データ】
+生年月日：${birthdate.value}
+出生時刻：${birthtime.value}（JST）
+出生地：日本・${place}
+緯度：${lat}
+経度：${lon}
+
+【クライアント情報】
+相談内容：
+${consultation.value}
+
+香りの好み：
+${aroma.value}
+
+体質・状態：
+${constitution.value}
+
+用途：
+${purpose.value}
+
+【出力指示】
+① 用途選択の分析結果  
+② 相談内容へのアドバイス（約400字）  
+③ アロマ＆ハーブブレンド（約300字）  
+④ 個人天体（約500字）  
+⑤ トランジット主要天体との合わせ読み（約300字）  
+⑥ 予測されるクライアントの様子（約100字）
+`;
+
+  output.value = prompt.trim();
+  client.classList.add("hidden");
+  reader.classList.remove("hidden");
+}
+
+function back(){
+  reader.classList.add("hidden");
+  client.classList.remove("hidden");
+}
+</script>
+
+</body>
+</html>
